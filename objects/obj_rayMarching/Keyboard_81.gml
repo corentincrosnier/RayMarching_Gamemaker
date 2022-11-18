@@ -3,6 +3,7 @@
 
 
 
+nbRay=0;
 camX-=rightX*translationSpd*delta_time/1000000;
 camY-=rightY*translationSpd*delta_time/1000000;
 camZ-=rightZ*translationSpd*delta_time/1000000;

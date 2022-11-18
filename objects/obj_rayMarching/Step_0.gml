@@ -36,6 +36,7 @@ if(mouseX!=mouseXPrev && mouseY!=mouseYPrev && mouse_check_button(mb_right) && !
 	
 	mouseXPrev=mouseX;
 	mouseYPrev=mouseY;
+	nbRay=0;
 	//window_mouse_set(window_get_width()/2, window_get_height()/2);
 }
 
@@ -46,6 +47,6 @@ else if(mouse_check_button_pressed(mb_right)){
 	mouseXPrev=mouseX;
 	mouseYPrev=mouseY;
 }
-
+/*
 show_debug_overlay(true);
-show_debug_message(fps);
+show_debug_message(fps);*/

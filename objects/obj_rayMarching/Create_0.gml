@@ -1,16 +1,37 @@
 /// @description Insert description here
 // You can write your code in this editor
 
-objPosUniform=shader_get_uniform(shd_raymarching,"objPos");
-objRotUniform=shader_get_uniform(shd_raymarching,"objRot");
-objScaleUniform=shader_get_uniform(shd_raymarching,"objScale");
-objDiffuseColorUniform=shader_get_uniform(shd_raymarching,"objDiffuse");
-objSpecColorUniform=shader_get_uniform(shd_raymarching,"objSpecColor");
-objSpecPowerUniform=shader_get_uniform(shd_raymarching,"objSpecPower");
-objFractalIterUniform=shader_get_uniform(shd_raymarching,"objFractalIter");
-objTypeUniform=shader_get_uniform(shd_raymarching,"objType");
-objNumberUniform=shader_get_uniform(shd_raymarching,"objNumber");
+surface=surface_create(room_width,room_height);
+//application_surface_draw_enable(false);
+//application_surface_enable(false);
 
+enum SHAPES{
+	BOX,
+	SPHERE,
+	MENGER,
+	MANDELBULB,
+	PLANE,
+	ROUND_BOX
+};
+
+T=0.1;
+
+objPosUniform=shader_get_uniform(shd_pathTracing,"objPos");
+//objRotUniform=shader_get_uniform(shd_pathTracing,"objRot");
+objScaleUniform=shader_get_uniform(shd_pathTracing,"objScale");
+//objDiffuseColorUniform=shader_get_uniform(shd_pathTracing,"objDiffuse");
+objSpecColorUniform=shader_get_uniform(shd_pathTracing,"objSpecColor");
+objSpecPowerUniform=shader_get_uniform(shd_pathTracing,"objSpecPower");
+objFractalIterUniform=shader_get_uniform(shd_pathTracing,"objFractalIter");
+objPlaneNormalUniform=shader_get_uniform(shd_pathTracing,"objPlaneNormal");
+objTypeUniform=shader_get_uniform(shd_pathTracing,"objType");
+objNumberUniform=shader_get_uniform(shd_pathTracing,"objNumber");
+nbRayUniform=shader_get_uniform(shd_pathTracing,"nbRay");
+//objIsEmittingUniform=shader_get_uniform(shd_pathTracing,"objIsEmitting");
+//objEmitColorUniform=shader_get_uniform(shd_pathTracing,"objEmitColor");
+
+
+nbRay=0;
 
 objs=ds_map_create();
 ds_map_add(objs,"pos",array_create(0));
@@ -20,18 +41,17 @@ ds_map_add(objs,"diffuse",array_create(0));
 ds_map_add(objs,"spec",array_create(0));
 ds_map_add(objs,"specPower",array_create(0));
 ds_map_add(objs,"fractalIter",array_create(0));
+ds_map_add(objs,"planeNormal",array_create(0));
+ds_map_add(objs,"isEmitting",array_create(0));
+ds_map_add(objs,"emitColor",array_create(0));
 ds_map_add(objs,"type",array_create(0));
 ds_map_add(objs,"number",0);
 
-array_push(objs[?"pos"],[1,0,0]);
-array_push(objs[?"rot"],[0,0,0]);
-array_push(objs[?"scale"],[1,1,1]);
-array_push(objs[?"diffuse"],[0.8,0.8,0.8]);
-array_push(objs[?"spec"],[1,1,1]);
-array_push(objs[?"specPower"],10);
-array_push(objs[?"fractalIter"],1);
-array_push(objs[?"type"],1);
-objs[?"number"]+=1;
+
+init_scene();
+
+show_debug_message(objs[?"pos"]);
+show_debug_message(array_concat(objs[?"pos"]));
 
 
 
@@ -44,7 +64,7 @@ mouseYPrev=window_get_height()/2;
 
 camX=0;
 camY=0;
-camZ=-10;
+camZ=-9;
 lookX=0;
 lookY=0;
 lookZ=1;

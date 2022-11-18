@@ -1,6 +1,7 @@
 /// @description Insert description here
 // You can write your code in this editor
 
+nbRay=0;
 var mat=rotMat([1,0,0],rotationSpd*delta_time/1000000);
 
 var newL=mat_vec_mul(mat,4,4,[lookX,lookY,lookZ,0]);

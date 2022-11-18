@@ -2,6 +2,7 @@
 // You can write your code in this editor
 
 
+nbRay=0;
 camX=0;
 camY=0;
 camZ=-10;

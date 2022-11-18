@@ -21,16 +21,18 @@ uniform mat4 proj;
 uniform int nbRay;
 uniform int objNumber;
 uniform vec3 objPos[MAX_OBJ];
-uniform vec3 objRot[MAX_OBJ];
+//uniform vec3 objRot[MAX_OBJ];
 uniform vec3 objScale[MAX_OBJ];
-uniform vec3 objDiffuseColor[MAX_OBJ];
+//uniform vec3 objDiffuseColor[MAX_OBJ];
 uniform vec3 objSpecColor[MAX_OBJ];
 uniform float objSpecPower[MAX_OBJ];
 uniform int objFractalIter[MAX_OBJ];
 uniform vec4 objPlaneNormal[MAX_OBJ];
 uniform int objType[MAX_OBJ];
-uniform bool objIsEmitting[MAX_OBJ];
-uniform vec3 objEmitColor[MAX_OBJ];
+//uniform bool objIsEmitting[MAX_OBJ];
+//uniform vec3 objEmitColor[MAX_OBJ];
+
+
 
 const int	SHAPE_BOX=0,
 			SHAPE_SPHERE=1,
@@ -71,22 +73,43 @@ vec3 objectDiffuse=vec3(0.5,0.85,0.38);
 vec3 objectSpec=vec3(1.0,0.1,0.1);
 float specPower=20.0;
 
+float seed=123.1231;
+float randN = 1.0;
 
-/*
-float mendelbulbSDF(vec3 Rp){
-	float x = w.x; float x2 = x*x; float x4 = x2*x2;
-	float y = w.y; float y2 = y*y; float y4 = y2*y2;
-	float z = w.z; float z2 = z*z; float z4 = z2*z2;
+float rand(){
+	vec2 co = v_vTexcoord.xy + randN + seed;
 
-	float k3 = x2 + z2;
-    float k2 = inversesqrt( k3*k3*k3*k3*k3*k3*k3 );
-    float k1 = x4 + y4 + z4 - 6.0*y2*z2 - 6.0*x2*y2 + 2.0*z2*x2;
-    float k4 = x2 - y2 + z2;
+	float A = 12.9898;
+	float B = 78.233;
+	float c = 43758.5453;
+	float dt = dot(co.xy, vec2(A,B));
+	float sn = mod(dt, 3.1415);
+	randN += 0.587;
+	return fract(sin(sn) * c);
+}
 
-    w.x =  64.0*x*y*z*(x2-z2)*k4*(x4-6.0*x2*z2+z4)*k1*k2;
-    w.y = -16.0*y2*k3*k4*k4 + k1*k1;
-    w.z = -8.0*y*k4*(x4*x4 - 28.0*x4*x2*z2 + 70.0*x4*z4 - 28.0*x2*z2*z4 + z4*z4)*k1*k2;
-}*/
+vec2 box_muller(){
+	float   r1 = rand();
+	float   r2 = rand();
+	float   tmp = sqrt(-2.0 * log(r1));
+	vec2    d = vec2(tmp * cos(2.0 * Pi * r2), tmp * sin(2.0 * Pi * r2));
+
+	return (d);
+}
+
+vec3 rand_dir(vec3 normal){
+	float r1 = rand();
+	float r2 = rand();
+
+	float f = sqrt(1.0 - r2);
+	vec3  dr_loc = vec3(cos(2.0 * Pi * r1) * f, sin(2.0 * Pi * r1) * f, sqrt(r2));
+	vec3  vr = vec3(rand() - 0.5, rand() - 0.5, rand() - 0.5);
+	vec3  tan1 = normalize(cross(normal, vr));
+	vec3  tan2 = cross(tan1, normal);    return (dr_loc.z * normal + dr_loc.x * tan1 + dr_loc.y * tan2);
+}
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 
 
 float mendelbulbSDF(vec3 v, int iter){
@@ -283,6 +306,7 @@ float sdf(vec3 Rp){
 	//return mandelboxSDF(Rp);
 	//return max(mandelboxSDF(Rp),sphereSDF(Rp));
 }
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 vec3 getNormal(vec3 hit, vec3 Rdir){
 	//vec3 A=marching(vec3(hit.x+,Rdir).hitPoint;
@@ -352,11 +376,15 @@ vec3 reachLight(vec3 hitPoint, vec3 normal, light l, vec3 view){
 	return vec3(0.0,0.0,0.0);
 }
 
+
+
 vec4 gammaCorrect(vec4 color){
     float gamma = 2.2;
     color.rgb = pow(color.rgb, vec3(1.0/gamma));
 	return color;
 }
+
+
 
 void main()
 {
@@ -364,27 +392,24 @@ void main()
 								light(vec3(2.0,-2.0,0.0),50.0,vec3(1.0,0.6,1.0)),
 								light(vec3(-2.0,-2.0,2.0),50.0,vec3(0.3,0.2,1.0)));*/
 								
-			
+	/*		
 	light l2=light(vec3(0.0,-1.0,-4.0),100.0,vec3(0.9,1.0,0.9));
-	light l3=light(vec3(0.0,2.0,-2.0),10.0,vec3(0.9,0.5,0.85));
+	light l3=light(vec3(0.0,2.0,-2.0),10.0,vec3(0.9,0.5,0.85));*/
 	
 	vec3 OR=(view*vec4(0.0,0.0,0.0,1.0)).xyz;
 	light l1=light(OR,2.0,vec3(0.9,0.55,0.95));
-	//vec3 OR=vec3(aa.xyz);
-	//vec3 Rd=normalize(vec3((v_vTexcoord-vec2(0.5,0.5)),-4.0)-OR);
-	vec4 target = proj * vec4(v_vTexcoord.x-0.5, v_vTexcoord.y-0.5, 1.0, 1.0);
-	//vec3 Rd = (view * vec4(normalize(target.xyz), 0.0)).xyz;
+	vec2 pixel=v_vTexcoord+box_muller()/100.0-vec2(0.5,0.5);
+	vec4 target = proj * vec4(pixel, 1.0, 1.0);
 	vec3 Rd = normalize((view * vec4(normalize(target.xyz), 0.0)).xyz);
-    //gl_FragColor = v_vColour * texture2D( gm_BaseTexture, v_vTexcoord );
 	vec4 color;
 	hit h=marching(OR,Rd);
 	
 
 	if(h.d<maxDist && h.iter<MAX_ITER){
-		vec3 lightCol=vec3(0.0,0.0,0.0);
-		/*for(int i=0;i<3;i++){
-			lightCol+=reachLight(h.hitPoint,lights[i]);
-		}*/
+		//vec3 lightCol=vec3(0.0,0.0,0.0);
+		//marching(h.hitPoint+normal*minDist*3.0)
+		
+		
 		vec3 normal=getNormal(h.hitPoint,h.Rdir);
 		
 		//lightCol+=reachLight(h.hitPoint,normal,l1,normalize(OR));
@@ -394,11 +419,15 @@ void main()
 		
 		
 		//color=vec4(1.0/sqrt(float(h.iter)),1.0/float(h.iter),1.0/float(h.iter),1.0);
-		color+=gammaCorrect(vec4(vec3(1.0/sqrt(float(h.iter))),1.0));
+		color+=gammaCorrect(vec4(vec3(1.0/sqrt(float(nbRay+1))),1.0));
 		//color=vec4(1.0,1.0,1.0,1.0);
+		
 	}
 	else
-		color=vec4(0.6,0.7,0.8,1.0);
-		
+		color=vec4(1.0,0.1,0.1,1.0);
+	/*if(nbRay>0)
+		gl_FragColor=(color+v_vColour*float(nbRay))/float(nbRay+1);
+	else
+	*/
 	gl_FragColor=color;
 }

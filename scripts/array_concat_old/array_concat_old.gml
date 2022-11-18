@@ -2,7 +2,7 @@
 /// @param arr1
 /// @param arr2
 
-function array_concat(arr1,arr2){
+function array_concat_old(arr1,arr2){
 
 if(!is_array(arr1) || !is_array(arr2))
 	return 0;

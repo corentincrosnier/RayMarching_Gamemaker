@@ -3,6 +3,7 @@
   "resourceVersion": "1.6",
   "name": "testRayMarching",
   "resources": [
+    {"id":{"name":"create_scene_box","path":"scripts/create_scene_box/create_scene_box.yy",},"order":14,},
     {"id":{"name":"vec_add","path":"scripts/vec_add/vec_add.yy",},"order":0,},
     {"id":{"name":"normalize_array","path":"scripts/normalize_array/normalize_array.yy",},"order":8,},
     {"id":{"name":"array_concat_old","path":"scripts/array_concat_old/array_concat_old.yy",},"order":11,},
@@ -11,6 +12,7 @@
     {"id":{"name":"shd_raymarching","path":"shaders/shd_raymarching/shd_raymarching.yy",},"order":0,},
     {"id":{"name":"vec_scal_mul","path":"scripts/vec_scal_mul/vec_scal_mul.yy",},"order":10,},
     {"id":{"name":"obj_rayMarching","path":"objects/obj_rayMarching/obj_rayMarching.yy",},"order":0,},
+    {"id":{"name":"shd_pathTracing","path":"shaders/shd_pathTracing/shd_pathTracing.yy",},"order":1,},
     {"id":{"name":"cross_prod","path":"scripts/cross_prod/cross_prod.yy",},"order":1,},
     {"id":{"name":"array_concat","path":"scripts/array_concat/array_concat.yy",},"order":12,},
     {"id":{"name":"length_vec","path":"scripts/length_vec/length_vec.yy",},"order":7,},
@@ -19,6 +21,7 @@
     {"id":{"name":"invert","path":"scripts/invert/invert.yy",},"order":3,},
     {"id":{"name":"normalize","path":"scripts/normalize/normalize.yy",},"order":6,},
     {"id":{"name":"surf","path":"objects/surf/surf.yy",},"order":2,},
+    {"id":{"name":"init_scene","path":"scripts/init_scene/init_scene.yy",},"order":13,},
     {"id":{"name":"Object2","path":"objects/Object2/Object2.yy",},"order":1,},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},"order":0,},
   ],

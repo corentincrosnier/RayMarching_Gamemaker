@@ -1,10 +1,16 @@
 
-function array_concat2(arr){
+function array_concat(arr, forceLength){
 
 var l=array_length(arr);
-var r=array_create(0);
-for(var i=0;i<l;i++){
-	array_copy(r,array_length(r),arr[i],0,array_length(arr[i]));
+if(array_length(arr)>0){
+	var r=array_create(0);
+	for(var i=0;i<l;i++){
+		array_copy(r,array_length(r),arr[i],0,array_length(arr[i]));
+	}
+}
+else{
+	//r=array_create(forceLength,0);
+	r=array_create(0);
 }
 return r;
 
