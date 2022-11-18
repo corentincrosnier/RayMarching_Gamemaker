@@ -6,9 +6,11 @@ mouseY=window_mouse_get_y();
 
 
 if(mouseX!=mouseXPrev && mouseY!=mouseYPrev && mouse_check_button(mb_right) && !mouse_check_button_pressed(mb_right)){
+	window_set_cursor(cr_none);
 	
 //	rotAxis = normalize(vec_add(vec_scal_mul([rightX,rightY,rightZ],mouseY - mouseYPrev),vec_scal_mul([upX,upY,upZ] ,mouseX - mouseXPrev)));
-	rotAxis = vec_add(vec_scal_mul([rightX,rightY,rightZ],mouseY - mouseYPrev),vec_scal_mul([upX,upY,upZ] ,mouseX - mouseXPrev));
+	//rotAxis = vec_add(vec_scal_mul([rightX,rightY,rightZ],mouseY - mouseYPrev),vec_scal_mul([upX,upY,upZ] ,mouseX - mouseXPrev));
+	rotAxis = vec_add(vec_scal_mul([rightX,rightY,rightZ],mouseY - mouseYPrev),vec_scal_mul([0,1,0] ,mouseX - mouseXPrev));
 
 	var mat=rotMat(normalize(rotAxis),length_vec(rotAxis)*mouseSpd*delta_time/1000000);
 
@@ -31,10 +33,12 @@ if(mouseX!=mouseXPrev && mouseY!=mouseYPrev && mouse_check_button(mb_right) && !
 
 	ViewMat=matrix_build_lookat(camX,camY,camZ,camX+lookX,camY+lookY,camZ+lookZ,upX,upY,upZ);
 
+	
 	mouseXPrev=mouseX;
 	mouseYPrev=mouseY;
 	//window_mouse_set(window_get_width()/2, window_get_height()/2);
 }
+
 else if(mouse_check_button_pressed(mb_right)){
 	window_mouse_set(window_get_width()/2, window_get_height()/2);
 	mouseX=window_get_width()/2;
@@ -42,3 +46,6 @@ else if(mouse_check_button_pressed(mb_right)){
 	mouseXPrev=mouseX;
 	mouseYPrev=mouseY;
 }
+
+show_debug_overlay(true);
+show_debug_message(fps);
