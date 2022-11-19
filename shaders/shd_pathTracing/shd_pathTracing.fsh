@@ -9,7 +9,7 @@ varying vec4 v_vColour;
 
 float radius=1.9;
 
-float minDist = 0.0001;
+float minDist = 0.001;
 float maxDist = 100.0;
 int MAX_ITER = 10000;
 const int MAX_OBJ = 20;
@@ -24,16 +24,16 @@ uniform int objNumber;
 uniform vec3 objPos[MAX_OBJ];
 //uniform vec3 objRot[MAX_OBJ];
 uniform vec3 objScale[MAX_OBJ];
-//uniform vec3 objDiffuseColor[MAX_OBJ];
+uniform vec3 objDiffuseColor[MAX_OBJ];
 uniform vec3 objSpecColor[MAX_OBJ];
 uniform float objSpecPower[MAX_OBJ];
 uniform int objFractalIter[MAX_OBJ];
 uniform vec4 objPlaneNormal[MAX_OBJ];
 uniform int objType[MAX_OBJ];
 uniform sampler2D surface;
-//uniform bool objIsEmitting[MAX_OBJ];
-//uniform vec3 objEmitColor[MAX_OBJ];
-
+uniform vec2 res;
+uniform int objIsEmitting[MAX_OBJ];
+uniform vec3 objEmitColor[MAX_OBJ];
 
 
 const int	SHAPE_BOX=0,
@@ -54,6 +54,7 @@ struct hit{
 	int iter;
 	vec3 hitPoint;
 	vec3 Rdir;
+	int objIndex;
 };
 
 /*
@@ -75,8 +76,11 @@ vec3 objectDiffuse=vec3(0.5,0.85,0.38);
 vec3 objectSpec=vec3(1.0,0.1,0.1);
 float specPower=20.0;
 
+int pathIteration=1;
+
 float seed=12.65742;
 float randN = 1.0+float(nbRay)*0.1;
+float sigma = 0.5;
 
 float rand(){
 	vec2 co = v_vTexcoord.xy + randN + seed;
@@ -93,7 +97,7 @@ float rand(){
 vec2 box_muller(){
 	float   r1 = rand();
 	float   r2 = rand();
-	float   tmp = sqrt(-2.0 * log(r1));
+	float   tmp = sigma*sqrt(-2.0 * log(r1));
 	vec2    d = vec2(tmp * cos(2.0 * Pi * r2), tmp * sin(2.0 * Pi * r2));
 
 	return (d);
@@ -107,7 +111,8 @@ vec3 rand_dir(vec3 normal){
 	vec3  dr_loc = vec3(cos(2.0 * Pi * r1) * f, sin(2.0 * Pi * r1) * f, sqrt(r2));
 	vec3  vr = vec3(rand() - 0.5, rand() - 0.5, rand() - 0.5);
 	vec3  tan1 = normalize(cross(normal, vr));
-	vec3  tan2 = cross(tan1, normal);    return (dr_loc.z * normal + dr_loc.x * tan1 + dr_loc.y * tan2);
+	vec3  tan2 = cross(tan1, normal);
+	return normalize(dr_loc.z * normal + dr_loc.x * tan1 + dr_loc.y * tan2);
 }
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -258,73 +263,49 @@ float mandelboxSDF(vec3 v)
     return (length(v) / abs(dr));
 }
 
+float objSDF(vec3 Rp, int objIndex){
+	vec3 _Rp=Rp;
+	_Rp=(_Rp-objPos[objIndex])/objScale[objIndex];
+	float sd;
+	float minScale=min(objScale[objIndex].x, min(objScale[objIndex].y, objScale[objIndex].z));
+	if(objType[objIndex]==SHAPE_BOX){
+	}
+	else if(objType[objIndex]==SHAPE_SPHERE){
+		sd=sphereSDF(_Rp)*minScale;
+	}
+	else if(objType[objIndex]==SHAPE_MENGER){
+		sd=mengerSDF(_Rp,objFractalIter[objIndex])*minScale;
+	}
+	else if(objType[objIndex]==SHAPE_MANDELBULB){
+		sd=mendelbulbSDF(_Rp,objFractalIter[objIndex])*minScale;
+	}
+	else if(objType[objIndex]==SHAPE_PLANE){
+		sd=planeSDF(Rp,objPlaneNormal[objIndex]);
+	}
+	else if(objType[objIndex]==SHAPE_ROUND_BOX){
+		sd=roundboxSDF(Rp,vec3(1.0,1.0,1.0),1.0)*minScale;
+	}
+	return sd;
+}
 
-float sdf(vec3 Rp){
+float sdf(vec3 Rp, inout int objIndex){
 	float sdf=maxDist;
 	for(int i=0;i<objNumber;i++){
-	//for(int i=0;i<1;i++){
-		//int i=1;
-		vec3 _Rp=Rp;
-		_Rp=(_Rp-objPos[i])/objScale[i];
-		
-		/*_Rp=_Rp-objPos[i];
-		_Rp.x=_Rp.x/objScale[i].x;
-		_Rp.y=_Rp.y/objScale[i].y;
-		_Rp.z=_Rp.z/objScale[i].z;*/
-		
-		if(objType[i]==SHAPE_BOX){
-		}
-		else if(objType[i]==SHAPE_SPHERE){
-			
-			float minScale=min(objScale[i].x, min(objScale[i].y, objScale[i].z));
-			
-			//sdf=min(sdf,sphereSDF(_Rp)*objScale[i]);
-			sdf=min(sdf,sphereSDF(_Rp)*minScale);
-		}
-		else if(objType[i]==SHAPE_MENGER){
-			float minScale=min(objScale[i].x, min(objScale[i].y, objScale[i].z));
-			sdf=min(sdf,mengerSDF(_Rp,objFractalIter[i])*minScale);
-		}
-		else if(objType[i]==SHAPE_MANDELBULB){
-			float minScale=min(objScale[i].x, min(objScale[i].y, objScale[i].z));
-			sdf=min(sdf,mendelbulbSDF(_Rp,objFractalIter[i])*minScale);
-		}
-		else if(objType[i]==SHAPE_PLANE){
-			//float minScale=min(objScale[i].x, min(objScale[i].y, objScale[i].z));
-			sdf=min(sdf,planeSDF(Rp,objPlaneNormal[i]));
-		}
-		else if(objType[i]==SHAPE_ROUND_BOX){
-			float minScale=min(objScale[i].x, min(objScale[i].y, objScale[i].z));
-			sdf=min(sdf,roundboxSDF(_Rp,vec3(1.0,1.0,1.0),1.0)*minScale);
+		float sd=objSDF(Rp,i);
+		if(sdf>sd){
+			sdf=sd;
+			objIndex=i;
 		}
 	}
 	return sdf;
-	//Rp=Rp-objPos;
-	//return sdRoundBox(Rp,vec3(0.5,0.5,0.5),0.1);
-	//return mendelbulbSDF(Rp);
-	//return min(sdRoundBox(Rp,vec3(0.6,0.6,0.6),0.05),mendelbulbSDF(Rp));
-	//return max(sdRoundBox(Rp,vec3(0.6,0.6,0.6),0.05),sphereSDF(Rp));
-	//return mengerSDF(Rp);
-	//return mandelboxSDF(Rp);
-	//return max(mandelboxSDF(Rp),sphereSDF(Rp));
 }
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-vec3 getNormal(vec3 hit, vec3 Rdir){
-	//vec3 A=marching(vec3(hit.x+,Rdir).hitPoint;
-	//vec3 B=marching(hit,Rdir).hitPoint;
-	
-	/*
-	float centerDistance = sdf(hit);
-	float xDistance = sdf(hit + vec3(minDist/3.0, 0.0, 0.0));
-	float yDistance = sdf(hit+ vec3(0.0, minDist/3.0, 0.0));
-	float zDistance = sdf(hit + vec3(0.0, 0.0, minDist/3.0));
-	vec3 normal = (vec3(xDistance, yDistance, zDistance) - centerDistance) / (minDist/3.0);
-	return normalize(normal);
-	*/
-	float xDistance = sdf(hit + vec3(minDist/3.0, 0.0, 0.0)) - sdf(hit - vec3(minDist/3.0, 0.0, 0.0));
-	float yDistance = sdf(hit + vec3(0.0, minDist/3.0, 0.0)) - sdf(hit - vec3(0.0, minDist/3.0, 0.0));
-	float zDistance = sdf(hit + vec3(0.0, 0.0, minDist/3.0)) - sdf(hit - vec3(0.0, 0.0, minDist/3.0));
+vec3 getNormal(hit H){
+
+	float xDistance = objSDF(H.hitPoint + vec3(minDist/3.0, 0.0, 0.0),H.objIndex) - objSDF(H.hitPoint - vec3(minDist/3.0, 0.0, 0.0),H.objIndex);
+	float yDistance = objSDF(H.hitPoint + vec3(0.0, minDist/3.0, 0.0),H.objIndex) - objSDF(H.hitPoint - vec3(0.0, minDist/3.0, 0.0),H.objIndex);
+	float zDistance = objSDF(H.hitPoint + vec3(0.0, 0.0, minDist/3.0),H.objIndex) - objSDF(H.hitPoint - vec3(0.0, 0.0, minDist/3.0),H.objIndex);
 	return normalize(vec3(xDistance,yDistance,zDistance));
 }
 
@@ -334,22 +315,23 @@ hit marching(vec3 OR, vec3 Rd){
 	vec3 pos = OR;
 	float ds = 0.0;
 	//minDist=0.0001*sdf(pos);
+	int objIndex;
 	for (int i = 0; i < MAX_ITER; i++) {
 		//ds = mendelbulbSDF(pos);
 		//ds = max(mendelbulbSDF(pos),sphereSDF(pos));
 		//ds = sdf(pos);
-		ds = sdf(pos);
+		ds = sdf(pos,objIndex);
 		//minDist=0.0001*d;
 		if(d>maxDist){
 			break;
 		}
 		if (ds < minDist){
-			return hit(d,i,pos,Rd);
+			return hit(d,i,pos,Rd,objIndex);
 		}
 		d += ds;
 		pos = OR + Rd * d;
 	}
-	return hit(maxDist+1.0,MAX_ITER,vec3(0.0,0.0,0.0),Rd);
+	return hit(maxDist+1.0,MAX_ITER,vec3(0.0,0.0,0.0),Rd,-1);
 }
 
 
@@ -386,7 +368,27 @@ vec4 gammaCorrect(vec4 color){
 	return color;
 }
 
-
+vec4 path(hit hitPoint, vec3 normal){
+	vec3 dir=rand_dir(normal);
+	vec3 color=objDiffuseColor[hitPoint.objIndex];
+	//vec3 color=vec3(0.1,0.9,0.2);
+	vec3 N=normal;
+	hit H=hitPoint;
+	for(int i=0;i<pathIteration;i++){
+		H=marching(H.hitPoint+N*minDist*3.0,dir);
+		if(H.d>maxDist)
+			break;
+		else{
+			if(objIsEmitting[H.objIndex]==1){
+				color=color*objEmitColor[H.objIndex];
+				break;
+			}
+			N=getNormal(H);
+			color=color*objDiffuseColor[H.objIndex];
+		}
+	}
+	return vec4(color,1.0);
+}
 
 void main()
 {
@@ -400,19 +402,21 @@ void main()
 	
 	vec3 OR=(view*vec4(0.0,0.0,0.0,1.0)).xyz;
 	light l1=light(OR,2.0,vec3(0.9,0.55,0.95));
-	vec2 pixel=v_vTexcoord+box_muller()/200.0-vec2(0.5,0.5);
+	//vec2 pixel=v_vTexcoord+box_muller()/200.0-vec2(0.5,0.5);
+	vec2 pixel=v_vTexcoord+vec2(0.5,0.5)/res+box_muller()/res-vec2(0.5,0.5);
 	vec4 target = proj * vec4(pixel, 1.0, 1.0);
 	vec3 Rd = normalize((view * vec4(normalize(target.xyz), 0.0)).xyz);
 	vec4 color;
 	hit h=marching(OR,Rd);
-	vec4 surfColor= texture2D(surface,v_vTexcoord);
+	vec4 surfColor = texture2D(surface,v_vTexcoord);
 
 	if(h.d<maxDist && h.iter<MAX_ITER){
 		//vec3 lightCol=vec3(0.0,0.0,0.0);
 		//marching(h.hitPoint+normal*minDist*3.0)
 		
 		
-		vec3 normal=getNormal(h.hitPoint,h.Rdir);
+		vec3 normal=getNormal(h);
+		color=path(h,normal);
 		
 		//lightCol+=reachLight(h.hitPoint,normal,l1,normalize(OR));
 		//lightCol+=reachLight(h.hitPoint,normal,l2,normalize(OR));
@@ -422,7 +426,7 @@ void main()
 		
 		//color=vec4(1.0/sqrt(float(h.iter)),1.0/float(h.iter),1.0/float(h.iter),1.0);
 		//color+=gammaCorrect(vec4(vec3(1.0/sqrt(float(h.iter))),1.0));
-		color+=vec4(vec3(1.0/sqrt(float(h.iter))),1.0);
+		//color+=vec4(vec3(1.0/sqrt(float(h.iter))),1.0);
 		//color=vec4(1.0,1.0,1.0,1.0);
 		
 	}

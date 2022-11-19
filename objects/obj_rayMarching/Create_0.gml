@@ -18,24 +18,25 @@ enum SHAPES{
 T=0.1;
 
 surfaceUniform=shader_get_sampler_index(shd_pathTracing,"surface");
+resUniform=shader_get_uniform(shd_pathTracing,"res");
 
 objPosUniform=shader_get_uniform(shd_pathTracing,"objPos");
 //objRotUniform=shader_get_uniform(shd_pathTracing,"objRot");
 objScaleUniform=shader_get_uniform(shd_pathTracing,"objScale");
-//objDiffuseColorUniform=shader_get_uniform(shd_pathTracing,"objDiffuse");
+objDiffuseColorUniform=shader_get_uniform(shd_pathTracing,"objDiffuseColor");
 objSpecColorUniform=shader_get_uniform(shd_pathTracing,"objSpecColor");
 objSpecPowerUniform=shader_get_uniform(shd_pathTracing,"objSpecPower");
 objFractalIterUniform=shader_get_uniform(shd_pathTracing,"objFractalIter");
 objPlaneNormalUniform=shader_get_uniform(shd_pathTracing,"objPlaneNormal");
 objTypeUniform=shader_get_uniform(shd_pathTracing,"objType");
 objNumberUniform=shader_get_uniform(shd_pathTracing,"objNumber");
+objIsEmittingUniform=shader_get_uniform(shd_pathTracing,"objIsEmitting");
+objEmitColorUniform=shader_get_uniform(shd_pathTracing,"objEmitColor");
 viewUniform=shader_get_uniform(shd_pathTracing,"view");
 projUniform=shader_get_uniform(shd_pathTracing,"proj");
 
 nbRayUniform=shader_get_uniform(shd_pathTracing,"nbRay");
 timeUniform=shader_get_uniform(shd_pathTracing,"time");
-//objIsEmittingUniform=shader_get_uniform(shd_pathTracing,"objIsEmitting");
-//objEmitColorUniform=shader_get_uniform(shd_pathTracing,"objEmitColor");
 
 nbRay=0;
 

@@ -8,6 +8,7 @@ function create_scene_box(){
 	array_push(objs[?"spec"],[1,1,1]);
 	array_push(objs[?"specPower"],10);
 	array_push(objs[?"fractalIter"],1);
+	array_push(objs[?"isEmitting"],0);
 	array_push(objs[?"planeNormal"],[0,-1,0,10]);
 	array_push(objs[?"type"],SHAPES.PLANE);
 	objs[?"number"]+=1;
@@ -20,6 +21,7 @@ function create_scene_box(){
 	array_push(objs[?"specPower"],10);
 	array_push(objs[?"fractalIter"],1);
 	array_push(objs[?"planeNormal"],[0,1,0,10]);
+	array_push(objs[?"isEmitting"],0);
 	array_push(objs[?"type"],SHAPES.PLANE);
 	objs[?"number"]+=1;
 	
@@ -31,6 +33,7 @@ function create_scene_box(){
 	array_push(objs[?"specPower"],10);
 	array_push(objs[?"fractalIter"],1);
 	array_push(objs[?"planeNormal"],[0,0,-1,10]);
+	array_push(objs[?"isEmitting"],0);
 	array_push(objs[?"type"],SHAPES.PLANE);
 	objs[?"number"]+=1;
 	
@@ -42,6 +45,7 @@ function create_scene_box(){
 	array_push(objs[?"specPower"],10);
 	array_push(objs[?"fractalIter"],1);
 	array_push(objs[?"planeNormal"],[0,0,1,10]);
+	array_push(objs[?"isEmitting"],0);
 	array_push(objs[?"type"],SHAPES.PLANE);
 	objs[?"number"]+=1;
 	
@@ -53,6 +57,7 @@ function create_scene_box(){
 	array_push(objs[?"specPower"],10);
 	array_push(objs[?"fractalIter"],1);
 	array_push(objs[?"planeNormal"],[1,0,0,10]);
+	array_push(objs[?"isEmitting"],0);
 	array_push(objs[?"type"],SHAPES.PLANE);
 	objs[?"number"]+=1;
 	
@@ -64,6 +69,7 @@ function create_scene_box(){
 	array_push(objs[?"specPower"],10);
 	array_push(objs[?"fractalIter"],1);
 	array_push(objs[?"planeNormal"],[-1,0,0,10]);
+	array_push(objs[?"isEmitting"],0);
 	array_push(objs[?"type"],SHAPES.PLANE);
 	objs[?"number"]+=1;
 }
