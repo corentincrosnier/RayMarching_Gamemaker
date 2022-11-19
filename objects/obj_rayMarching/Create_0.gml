@@ -1,8 +1,9 @@
 /// @description Insert description here
 // You can write your code in this editor
 
+appSurface=surface_create(room_width,room_height);
 surface=surface_create(room_width,room_height);
-//application_surface_draw_enable(false);
+application_surface_draw_enable(false);
 //application_surface_enable(false);
 
 enum SHAPES{
@@ -16,6 +17,8 @@ enum SHAPES{
 
 T=0.1;
 
+surfaceUniform=shader_get_sampler_index(shd_pathTracing,"surface");
+
 objPosUniform=shader_get_uniform(shd_pathTracing,"objPos");
 //objRotUniform=shader_get_uniform(shd_pathTracing,"objRot");
 objScaleUniform=shader_get_uniform(shd_pathTracing,"objScale");
@@ -26,10 +29,13 @@ objFractalIterUniform=shader_get_uniform(shd_pathTracing,"objFractalIter");
 objPlaneNormalUniform=shader_get_uniform(shd_pathTracing,"objPlaneNormal");
 objTypeUniform=shader_get_uniform(shd_pathTracing,"objType");
 objNumberUniform=shader_get_uniform(shd_pathTracing,"objNumber");
+viewUniform=shader_get_uniform(shd_pathTracing,"view");
+projUniform=shader_get_uniform(shd_pathTracing,"proj");
+
 nbRayUniform=shader_get_uniform(shd_pathTracing,"nbRay");
+timeUniform=shader_get_uniform(shd_pathTracing,"time");
 //objIsEmittingUniform=shader_get_uniform(shd_pathTracing,"objIsEmitting");
 //objEmitColorUniform=shader_get_uniform(shd_pathTracing,"objEmitColor");
-
 
 nbRay=0;
 
@@ -81,8 +87,7 @@ aspect=16/9;
 znear=0.1;
 zfar=200;
 
-viewUniform=shader_get_uniform(shd_raymarching,"view");
-projUniform=shader_get_uniform(shd_raymarching,"proj");
 
 ViewMat=matrix_build_lookat(camX,camY,camZ,camX+lookX,camY+lookY,camZ+lookZ,upX,upY,upZ);
 ProjMat=matrix_build_projection_perspective_fov(fov_y,aspect,znear,zfar);
+

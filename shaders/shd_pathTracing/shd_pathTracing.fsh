@@ -19,6 +19,7 @@ uniform mat4 view;
 uniform mat4 proj;
 
 uniform int nbRay;
+uniform float time;
 uniform int objNumber;
 uniform vec3 objPos[MAX_OBJ];
 //uniform vec3 objRot[MAX_OBJ];
@@ -29,6 +30,7 @@ uniform float objSpecPower[MAX_OBJ];
 uniform int objFractalIter[MAX_OBJ];
 uniform vec4 objPlaneNormal[MAX_OBJ];
 uniform int objType[MAX_OBJ];
+uniform sampler2D surface;
 //uniform bool objIsEmitting[MAX_OBJ];
 //uniform vec3 objEmitColor[MAX_OBJ];
 
@@ -73,8 +75,8 @@ vec3 objectDiffuse=vec3(0.5,0.85,0.38);
 vec3 objectSpec=vec3(1.0,0.1,0.1);
 float specPower=20.0;
 
-float seed=123.1231;
-float randN = 1.0;
+float seed=12.65742;
+float randN = 1.0+float(nbRay)*0.1;
 
 float rand(){
 	vec2 co = v_vTexcoord.xy + randN + seed;
@@ -398,12 +400,12 @@ void main()
 	
 	vec3 OR=(view*vec4(0.0,0.0,0.0,1.0)).xyz;
 	light l1=light(OR,2.0,vec3(0.9,0.55,0.95));
-	vec2 pixel=v_vTexcoord+box_muller()/100.0-vec2(0.5,0.5);
+	vec2 pixel=v_vTexcoord+box_muller()/200.0-vec2(0.5,0.5);
 	vec4 target = proj * vec4(pixel, 1.0, 1.0);
 	vec3 Rd = normalize((view * vec4(normalize(target.xyz), 0.0)).xyz);
 	vec4 color;
 	hit h=marching(OR,Rd);
-	
+	vec4 surfColor= texture2D(surface,v_vTexcoord);
 
 	if(h.d<maxDist && h.iter<MAX_ITER){
 		//vec3 lightCol=vec3(0.0,0.0,0.0);
@@ -419,15 +421,16 @@ void main()
 		
 		
 		//color=vec4(1.0/sqrt(float(h.iter)),1.0/float(h.iter),1.0/float(h.iter),1.0);
-		color+=gammaCorrect(vec4(vec3(1.0/sqrt(float(nbRay+1))),1.0));
+		//color+=gammaCorrect(vec4(vec3(1.0/sqrt(float(h.iter))),1.0));
+		color+=vec4(vec3(1.0/sqrt(float(h.iter))),1.0);
 		//color=vec4(1.0,1.0,1.0,1.0);
 		
 	}
 	else
-		color=vec4(1.0,0.1,0.1,1.0);
-	/*if(nbRay>0)
-		gl_FragColor=(color+v_vColour*float(nbRay))/float(nbRay+1);
+		color=vec4(1.0,0.3,0.3,1.0);
+	if(nbRay>0)
+		gl_FragColor=(color+surfColor*float(nbRay))/float(nbRay+1);
 	else
-	*/
+	
 	gl_FragColor=color;
 }
