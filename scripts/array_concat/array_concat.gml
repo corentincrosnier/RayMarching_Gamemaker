@@ -9,8 +9,8 @@ if(array_length(arr)>0){
 	}
 }
 else{
-	//r=array_create(forceLength,0);
-	r=array_create(0);
+	r=array_create(forceLength,0);
+	//r=array_create(0);
 }
 return r;
 

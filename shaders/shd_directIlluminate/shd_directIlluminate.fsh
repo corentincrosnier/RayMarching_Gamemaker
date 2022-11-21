@@ -9,7 +9,7 @@ varying vec4 v_vColour;
 
 float radius=1.9;
 
-float minDist = 0.001;
+float minDist = 0.0001;
 float maxDist = 100.0;
 int MAX_ITER = 10000;
 const int MAX_OBJ = 20;
@@ -19,10 +19,9 @@ uniform mat4 view;
 uniform mat4 proj;
 
 uniform int nbRay;
-uniform float time;
 uniform int objNumber;
 uniform vec3 objPos[MAX_OBJ];
-//uniform vec3 objRot[MAX_OBJ];
+uniform vec3 objRot[MAX_OBJ];
 uniform vec3 objScale[MAX_OBJ];
 uniform vec3 objDiffuseColor[MAX_OBJ];
 uniform vec3 objSpecColor[MAX_OBJ];
@@ -30,11 +29,8 @@ uniform float objSpecPower[MAX_OBJ];
 uniform int objFractalIter[MAX_OBJ];
 uniform vec4 objPlaneNormal[MAX_OBJ];
 uniform int objType[MAX_OBJ];
-uniform sampler2D surface;
-uniform vec2 res;
-uniform int objIsEmitting[MAX_OBJ];
+uniform bool objIsEmitting[MAX_OBJ];
 uniform vec3 objEmitColor[MAX_OBJ];
-
 
 const int	SHAPE_BOX=0,
 			SHAPE_SPHERE=1,
@@ -54,7 +50,6 @@ struct hit{
 	int iter;
 	vec3 hitPoint;
 	vec3 Rdir;
-	int objIndex;
 };
 
 /*
@@ -76,48 +71,22 @@ vec3 objectDiffuse=vec3(0.5,0.85,0.38);
 vec3 objectSpec=vec3(1.0,0.1,0.1);
 float specPower=20.0;
 
-bool boxMuller=false;
-int pathIteration=1;
 
-float seed=12.65742;
-float randN = 1.0+float(nbRay)*0.1;
-float sigma = 0.1;
+/*
+float mendelbulbSDF(vec3 Rp){
+	float x = w.x; float x2 = x*x; float x4 = x2*x2;
+	float y = w.y; float y2 = y*y; float y4 = y2*y2;
+	float z = w.z; float z2 = z*z; float z4 = z2*z2;
 
-float rand(){
-	vec2 co = v_vTexcoord.xy + randN + seed;
+	float k3 = x2 + z2;
+    float k2 = inversesqrt( k3*k3*k3*k3*k3*k3*k3 );
+    float k1 = x4 + y4 + z4 - 6.0*y2*z2 - 6.0*x2*y2 + 2.0*z2*x2;
+    float k4 = x2 - y2 + z2;
 
-	float A = 12.9898;
-	float B = 78.233;
-	float c = 43758.5453;
-	float dt = dot(co.xy, vec2(A,B));
-	float sn = mod(dt, 3.1415);
-	randN += 0.587;
-	return fract(sin(sn) * c);
-}
-
-vec2 box_muller(){
-	float   r1 = rand();
-	float   r2 = rand();
-	float   tmp = sigma*sqrt(-2.0 * log(r1));
-	vec2    d = vec2(tmp * cos(2.0 * Pi * r2), tmp * sin(2.0 * Pi * r2));
-
-	return (d);
-}
-
-vec3 rand_dir(vec3 normal){
-	float r1 = rand();
-	float r2 = rand();
-
-	float f = sqrt(1.0 - r2);
-	vec3  dr_loc = vec3(cos(2.0 * Pi * r1) * f, sin(2.0 * Pi * r1) * f, sqrt(r2));
-	vec3  vr = vec3(rand() - 0.5, rand() - 0.5, rand() - 0.5);
-	vec3  tan1 = normalize(cross(normal, vr));
-	vec3  tan2 = cross(tan1, normal);
-	return normalize(dr_loc.z * normal + dr_loc.x * tan1 + dr_loc.y * tan2);
-}
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
+    w.x =  64.0*x*y*z*(x2-z2)*k4*(x4-6.0*x2*z2+z4)*k1*k2;
+    w.y = -16.0*y2*k3*k4*k4 + k1*k1;
+    w.z = -8.0*y*k4*(x4*x4 - 28.0*x4*x2*z2 + 70.0*x4*z4 - 28.0*x2*z2*z4 + z4*z4)*k1*k2;
+}*/
 
 
 float mendelbulbSDF(vec3 v, int iter){
@@ -264,49 +233,72 @@ float mandelboxSDF(vec3 v)
     return (length(v) / abs(dr));
 }
 
-float objSDF(vec3 Rp, int objIndex){
-	vec3 _Rp=Rp;
-	_Rp=(_Rp-objPos[objIndex])/objScale[objIndex];
-	float sd;
-	float minScale=min(objScale[objIndex].x, min(objScale[objIndex].y, objScale[objIndex].z));
-	if(objType[objIndex]==SHAPE_BOX){
-	}
-	else if(objType[objIndex]==SHAPE_SPHERE){
-		sd=sphereSDF(_Rp)*minScale;
-	}
-	else if(objType[objIndex]==SHAPE_MENGER){
-		sd=mengerSDF(_Rp,objFractalIter[objIndex])*minScale;
-	}
-	else if(objType[objIndex]==SHAPE_MANDELBULB){
-		sd=mendelbulbSDF(_Rp,objFractalIter[objIndex])*minScale;
-	}
-	else if(objType[objIndex]==SHAPE_PLANE){
-		sd=planeSDF(Rp,objPlaneNormal[objIndex]);
-	}
-	else if(objType[objIndex]==SHAPE_ROUND_BOX){
-		sd=roundboxSDF(Rp,vec3(1.0,1.0,1.0),1.0)*minScale;
-	}
-	return sd;
-}
 
-float sdf(vec3 Rp, inout int objIndex){
+float sdf(vec3 Rp){
 	float sdf=maxDist;
 	for(int i=0;i<objNumber;i++){
-		float sd=objSDF(Rp,i);
-		if(sdf>sd){
-			sdf=sd;
-			objIndex=i;
+	//for(int i=0;i<1;i++){
+		//int i=1;
+		vec3 _Rp=Rp;
+		_Rp=(_Rp-objPos[i])/objScale[i];
+		
+		/*_Rp=_Rp-objPos[i];
+		_Rp.x=_Rp.x/objScale[i].x;
+		_Rp.y=_Rp.y/objScale[i].y;
+		_Rp.z=_Rp.z/objScale[i].z;*/
+		
+		if(objType[i]==SHAPE_BOX){
+		}
+		else if(objType[i]==SHAPE_SPHERE){
+			
+			float minScale=min(objScale[i].x, min(objScale[i].y, objScale[i].z));
+			
+			//sdf=min(sdf,sphereSDF(_Rp)*objScale[i]);
+			sdf=min(sdf,sphereSDF(_Rp)*minScale);
+		}
+		else if(objType[i]==SHAPE_MENGER){
+			float minScale=min(objScale[i].x, min(objScale[i].y, objScale[i].z));
+			sdf=min(sdf,mengerSDF(_Rp,objFractalIter[i])*minScale);
+		}
+		else if(objType[i]==SHAPE_MANDELBULB){
+			float minScale=min(objScale[i].x, min(objScale[i].y, objScale[i].z));
+			sdf=min(sdf,mendelbulbSDF(_Rp,objFractalIter[i])*minScale);
+		}
+		else if(objType[i]==SHAPE_PLANE){
+			//float minScale=min(objScale[i].x, min(objScale[i].y, objScale[i].z));
+			sdf=min(sdf,planeSDF(Rp,objPlaneNormal[i]));
+		}
+		else if(objType[i]==SHAPE_ROUND_BOX){
+			float minScale=min(objScale[i].x, min(objScale[i].y, objScale[i].z));
+			sdf=min(sdf,roundboxSDF(_Rp,vec3(1.0,1.0,1.0),1.0)*minScale);
 		}
 	}
 	return sdf;
+	//Rp=Rp-objPos;
+	//return sdRoundBox(Rp,vec3(0.5,0.5,0.5),0.1);
+	//return mendelbulbSDF(Rp);
+	//return min(sdRoundBox(Rp,vec3(0.6,0.6,0.6),0.05),mendelbulbSDF(Rp));
+	//return max(sdRoundBox(Rp,vec3(0.6,0.6,0.6),0.05),sphereSDF(Rp));
+	//return mengerSDF(Rp);
+	//return mandelboxSDF(Rp);
+	//return max(mandelboxSDF(Rp),sphereSDF(Rp));
 }
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-vec3 getNormal(hit H){
-
-	float xDistance = objSDF(H.hitPoint + vec3(minDist/3.0, 0.0, 0.0),H.objIndex) - objSDF(H.hitPoint - vec3(minDist/3.0, 0.0, 0.0),H.objIndex);
-	float yDistance = objSDF(H.hitPoint + vec3(0.0, minDist/3.0, 0.0),H.objIndex) - objSDF(H.hitPoint - vec3(0.0, minDist/3.0, 0.0),H.objIndex);
-	float zDistance = objSDF(H.hitPoint + vec3(0.0, 0.0, minDist/3.0),H.objIndex) - objSDF(H.hitPoint - vec3(0.0, 0.0, minDist/3.0),H.objIndex);
+vec3 getNormal(vec3 hit, vec3 Rdir){
+	//vec3 A=marching(vec3(hit.x+,Rdir).hitPoint;
+	//vec3 B=marching(hit,Rdir).hitPoint;
+	
+	/*
+	float centerDistance = sdf(hit);
+	float xDistance = sdf(hit + vec3(minDist/3.0, 0.0, 0.0));
+	float yDistance = sdf(hit+ vec3(0.0, minDist/3.0, 0.0));
+	float zDistance = sdf(hit + vec3(0.0, 0.0, minDist/3.0));
+	vec3 normal = (vec3(xDistance, yDistance, zDistance) - centerDistance) / (minDist/3.0);
+	return normalize(normal);
+	*/
+	float xDistance = sdf(hit + vec3(minDist/3.0, 0.0, 0.0)) - sdf(hit - vec3(minDist/3.0, 0.0, 0.0));
+	float yDistance = sdf(hit + vec3(0.0, minDist/3.0, 0.0)) - sdf(hit - vec3(0.0, minDist/3.0, 0.0));
+	float zDistance = sdf(hit + vec3(0.0, 0.0, minDist/3.0)) - sdf(hit - vec3(0.0, 0.0, minDist/3.0));
 	return normalize(vec3(xDistance,yDistance,zDistance));
 }
 
@@ -316,23 +308,22 @@ hit marching(vec3 OR, vec3 Rd){
 	vec3 pos = OR;
 	float ds = 0.0;
 	//minDist=0.0001*sdf(pos);
-	int objIndex;
 	for (int i = 0; i < MAX_ITER; i++) {
 		//ds = mendelbulbSDF(pos);
 		//ds = max(mendelbulbSDF(pos),sphereSDF(pos));
 		//ds = sdf(pos);
-		ds = sdf(pos,objIndex);
+		ds = sdf(pos);
 		//minDist=0.0001*d;
 		if(d>maxDist){
 			break;
 		}
 		if (ds < minDist){
-			return hit(d,i,pos,Rd,objIndex);
+			return hit(d,i,pos,Rd);
 		}
 		d += ds;
 		pos = OR + Rd * d;
 	}
-	return hit(maxDist+1.0,MAX_ITER,vec3(0.0,0.0,0.0),Rd,-1);
+	return hit(maxDist+1.0,MAX_ITER,vec3(0.0,0.0,0.0),Rd);
 }
 
 
@@ -361,34 +352,10 @@ vec3 reachLight(vec3 hitPoint, vec3 normal, light l, vec3 view){
 	return vec3(0.0,0.0,0.0);
 }
 
-
-
 vec4 gammaCorrect(vec4 color){
     float gamma = 2.2;
     color.rgb = pow(color.rgb, vec3(1.0/gamma));
 	return color;
-}
-
-vec4 path(hit hitPoint, vec3 normal){
-	vec3 dir=rand_dir(normal);
-	vec3 color=objDiffuseColor[hitPoint.objIndex];
-	//vec3 color=vec3(0.1,0.9,0.2);
-	vec3 N=normal;
-	hit H=hitPoint;
-	for(int i=0;i<pathIteration;i++){
-		H=marching(H.hitPoint+N*minDist*3.0,dir);
-		if(H.d>maxDist)
-			break;
-		else{
-			if(objIsEmitting[H.objIndex]==1){
-				color=color*objEmitColor[H.objIndex];
-				break;
-			}
-			N=getNormal(H);
-			color=color*objDiffuseColor[H.objIndex];
-		}
-	}
-	return vec4(color,1.0);
 }
 
 void main()
@@ -397,31 +364,28 @@ void main()
 								light(vec3(2.0,-2.0,0.0),50.0,vec3(1.0,0.6,1.0)),
 								light(vec3(-2.0,-2.0,2.0),50.0,vec3(0.3,0.2,1.0)));*/
 								
-	/*		
+			
 	light l2=light(vec3(0.0,-1.0,-4.0),100.0,vec3(0.9,1.0,0.9));
-	light l3=light(vec3(0.0,2.0,-2.0),10.0,vec3(0.9,0.5,0.85));*/
+	light l3=light(vec3(0.0,2.0,-2.0),10.0,vec3(0.9,0.5,0.85));
 	
 	vec3 OR=(view*vec4(0.0,0.0,0.0,1.0)).xyz;
 	light l1=light(OR,2.0,vec3(0.9,0.55,0.95));
-	//vec2 pixel=v_vTexcoord+box_muller()/200.0-vec2(0.5,0.5);
-	vec2 pixel;
-	if(boxMuller)
-		pixel=v_vTexcoord+vec2(0.5,0.5)/res+box_muller()/res-vec2(0.5,0.5);
-	else
-		pixel=v_vTexcoord+vec2(0.5,0.5)/res-vec2(0.5,0.5);
-	vec4 target = proj * vec4(pixel, 1.0, 1.0);
+	//vec3 OR=vec3(aa.xyz);
+	//vec3 Rd=normalize(vec3((v_vTexcoord-vec2(0.5,0.5)),-4.0)-OR);
+	vec4 target = proj * vec4(v_vTexcoord.x-0.5, v_vTexcoord.y-0.5, 1.0, 1.0);
+	//vec3 Rd = (view * vec4(normalize(target.xyz), 0.0)).xyz;
 	vec3 Rd = normalize((view * vec4(normalize(target.xyz), 0.0)).xyz);
+    //gl_FragColor = v_vColour * texture2D( gm_BaseTexture, v_vTexcoord );
 	vec4 color;
 	hit h=marching(OR,Rd);
-	vec4 surfColor = texture2D(surface,v_vTexcoord);
+	
 
 	if(h.d<maxDist && h.iter<MAX_ITER){
-		//vec3 lightCol=vec3(0.0,0.0,0.0);
-		//marching(h.hitPoint+normal*minDist*3.0)
-		
-		
-		vec3 normal=getNormal(h);
-		color=path(h,normal);
+		vec3 lightCol=vec3(0.0,0.0,0.0);
+		/*for(int i=0;i<3;i++){
+			lightCol+=reachLight(h.hitPoint,lights[i]);
+		}*/
+		vec3 normal=getNormal(h.hitPoint,h.Rdir);
 		
 		//lightCol+=reachLight(h.hitPoint,normal,l1,normalize(OR));
 		//lightCol+=reachLight(h.hitPoint,normal,l2,normalize(OR));
@@ -430,15 +394,11 @@ void main()
 		
 		
 		//color=vec4(1.0/sqrt(float(h.iter)),1.0/float(h.iter),1.0/float(h.iter),1.0);
-		//color+=gammaCorrect(vec4(vec3(1.0/sqrt(float(h.iter))),1.0));
-		//color+=vec4(vec3(1.0/sqrt(float(h.iter))),1.0);
+		color+=gammaCorrect(vec4(vec3(1.0/sqrt(float(h.iter))),1.0));
 		//color=vec4(1.0,1.0,1.0,1.0);
-		
 	}
 	else
-		color=vec4(1.0,0.3,0.3,1.0);
-	if(nbRay>0)
-		gl_FragColor=surfColor+(color-surfColor)/float(nbRay);
-	else
-		gl_FragColor=color;
+		color=vec4(0.6,0.7,0.8,1.0);
+		
+	gl_FragColor=color;
 }
